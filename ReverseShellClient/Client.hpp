@@ -66,6 +66,8 @@ private:
 			case DownloadFile:
 				Download();
 				break;
+			case UploadFile:
+				Upload();
 			default:
 				break;
 			}
@@ -74,14 +76,19 @@ private:
 
 	OperationType ReadOperationType()
 	{
+		auto operation = Response();
+		return GetOperationType(operation);
+	}
+
+	std::string Response()
+	{
 		auto responseSize = boost::asio::read_until(m_socket, m_responseBuf, m_delimiter, m_errorCode);
 		if (m_errorCode)
 			throw; // TODO - handle error
-		
-		auto operation = CleanReponse(responseSize);
-		return GetOperationType(operation);
+
+		return CleanReponse(responseSize);
 	}
-	
+
 	std::string CleanReponse(size_t responseSize)
 	{
 		std::string response(
@@ -114,12 +121,7 @@ private:
 	
 	void Command()
 	{
-		// TODO - Code duplication with ReadOperationType()
-		auto responseSize = boost::asio::read_until(m_socket, m_responseBuf, m_delimiter, m_errorCode);
-		if (m_errorCode)
-			throw; // TODO - handle error
-
-		auto command = CleanReponse(responseSize);
+		auto command = Response();
 		CommandExecuter commandExecuter;
 		auto commandResult = *commandExecuter.RunCommand(command);
 		std::ostream requestStream(&m_requestBuf);
@@ -129,11 +131,7 @@ private:
 
 	void Download()
 	{
-		auto responseSize = boost::asio::read_until(m_socket, m_responseBuf, m_delimiter, m_errorCode);
-		if (m_errorCode)
-			throw; // TODO - handle error
-
-		auto filePath = CleanReponse(responseSize);
+		auto filePath = Response();
 		m_file.open(filePath, std::ios::in | std::ios::binary);
 		if (!m_file)
 			throw std::fstream::failure("Failed while opening file"); // TODO - Throw custom exception exception!
@@ -158,7 +156,29 @@ private:
 		m_file.close();
 	}
 
-	void SendFileSize();
+	void Upload()
+	{
+		auto fileToCreate = Response();
+		auto fileSize = std::stoi(Response());
+
+		m_file.open(fileToCreate, std::ios::out | std::ios::binary);
+		if (!m_file)
+			throw; // TODO - throw specific exception
+
+		while (fileSize > 0)
+		{
+			auto bufferSize = (fileSize < m_buf.size()) ? fileSize : m_buf.size();
+			auto buf = boost::asio::buffer(m_buf, bufferSize);
+			auto responseSize = boost::asio::read(m_socket, buf, m_errorCode);
+			m_file.write(m_buf.data(), responseSize);
+
+			fileSize -= responseSize;
+			std::cout << "Remaining bytes: " << fileSize << "\nResponse Size: " << responseSize << "\n Response data:" << buf.data() << std::endl;
+		}
+		m_file.close();
+		std::cout << "File downloaded to - " << fileToCreate << std::endl;
+	}
+
 
 	template<typename Buffer>
 	void Send(Buffer& t_buffer)

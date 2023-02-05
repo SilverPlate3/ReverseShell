@@ -57,6 +57,8 @@ public:
             case DownloadFile:
                 Download();
                 break;
+            case UploadFile:
+                Upload();
             default:
                 std::cout << "Invalid operation! Type the number of a option from the menu!" << std::endl;
                 break;
@@ -145,11 +147,11 @@ public:
     void Download()
     {
         auto filePath = ReadOperationInstruction("Full path of file on client");
-        auto request = "DownloadFile" + m_delimiter + filePath + m_delimiter;
         CreateFileLocally(filePath);
+        auto request = "DownloadFile" + m_delimiter + filePath + m_delimiter;
         SendRequest(request);
 
-        auto fileSize = IncomingFileSize();
+        auto fileSize = std::stoi(Response());
         while (fileSize > 0)
         {
             auto bufferSize = (fileSize < m_buf.size()) ? fileSize : m_buf.size();
@@ -164,6 +166,34 @@ public:
         std::cout << "File downloaded to - " << filePath << std::endl;
     }
 
+    void Upload()
+    {
+        auto localFilePath = ReadOperationInstruction("Full path of the local file to upload");
+        auto destinationFilePath = ReadOperationInstruction("Full path of the local file to upload");
+        auto fileSize = std::filesystem::file_size(localFilePath);
+        auto request = "UploadFile" + m_delimiter + destinationFilePath + m_delimiter + std::to_string(fileSize) + m_delimiter;
+        SendRequest(request);
+
+        m_file.open(localFilePath, std::ios::in | std::ios::binary);
+        if (!m_file)
+            throw std::fstream::failure("Failed while opening file"); // TODO - Throw custom exception exception!
+
+        while (fileSize > 0)
+        {
+            m_file.read(m_buf.data(), m_buf.size());
+            if (m_file.fail() && !m_file.eof())
+                throw std::fstream::failure("Failed while reading file");
+
+            size_t bufferSize(m_file.gcount());
+            auto buf = boost::asio::buffer(m_buf.data(), bufferSize);
+            Send(buf);
+
+            fileSize -= bufferSize;
+        }
+        m_file.close();
+        std::cout << "File uploaded to - " << localFilePath << std::endl;
+    }
+
     void CreateFileLocally(const std::string& filePath)
     {
         auto fileName = std::filesystem::path(filePath).filename().string();
@@ -173,18 +203,6 @@ public:
             throw; // TODO - throw specific exception
     }
 
-    int IncomingFileSize()
-    {
-        try
-        {
-            auto response = Response();
-            return std::stoi(response);
-        }
-        catch (std::invalid_argument& ex)
-        {
-            ; //TODO - Throw exception. This means that the first part of the response wasn't a number representing the incoming file size;
-        }
-    }
 
 private:
     // Move location and try to integrate with client as both have same function
