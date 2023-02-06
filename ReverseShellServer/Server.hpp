@@ -59,6 +59,7 @@ public:
                 break;
             case UploadFile:
                 Upload();
+                break;
             default:
                 std::cout << "Invalid operation! Type the number of a option from the menu!" << std::endl;
                 break;
@@ -115,7 +116,14 @@ public:
         std::cout << "\n\n[+]" << operation << ": ";
         std::string instruction;
         std::getline(std::cin >> std::ws, instruction);
+        RemoveUnnecessaryQuotationMark(instruction);
         return instruction;
+    }
+
+    void RemoveUnnecessaryQuotationMark(std::string& string)
+    {
+        if(string.front() == '\"' && string.back() == '\"')
+            string = string.substr(1, string.length() - 2);
     }
 
     void SendRequest(const std::string& request)
