@@ -104,7 +104,7 @@ public:
     void Command()
     {
         auto command = ReadOperationInstruction("Write command");
-        std::string request("RunCommand" + m_delimiter + command + m_delimiter);
+        std::string request("1" + m_delimiter + command + m_delimiter);
 
         SendRequest(request);
         auto commandOutput = Response();
@@ -154,9 +154,9 @@ public:
 
     void Download()
     {
-        auto filePath = ReadOperationInstruction("Full path of file on client");
-        CreateFileLocally(filePath);
-        auto request = "DownloadFile" + m_delimiter + filePath + m_delimiter;
+        auto filePath = ReadOperationInstruction("Source path (remote)");
+        auto fileToCreate = CreateFileLocally(filePath);
+        auto request = "2" + m_delimiter + filePath + m_delimiter;
         SendRequest(request);
 
         auto fileSize = std::stoi(Response());
@@ -168,18 +168,19 @@ public:
             m_file.write(m_buf.data(), responseSize);
 
             fileSize -= responseSize;
-            std::cout << "Remaining bytes: " << fileSize << "\nResponse Size: " << responseSize << "\n Response data:" << buf.data() << std::endl;
+            std::cout << "Remaining bytes: " << fileSize << "\nResponse Size: " << responseSize << std::endl;
         }
+        std::cout << "Finished Download" << std::endl;
         m_file.close();
-        std::cout << "File downloaded to - " << filePath << std::endl;
+        std::cout << "File downloaded to - " << fileToCreate << std::endl;
     }
 
     void Upload()
     {
-        auto localFilePath = ReadOperationInstruction("Full path of the local file to upload");
-        auto destinationFilePath = ReadOperationInstruction("Full path of the local file to upload");
+        auto localFilePath = ReadOperationInstruction("Source path (local)");
+        auto destinationFilePath = ReadOperationInstruction("Destination path (remote)");
         auto fileSize = std::filesystem::file_size(localFilePath);
-        auto request = "UploadFile" + m_delimiter + destinationFilePath + m_delimiter + std::to_string(fileSize) + m_delimiter;
+        auto request = "3" + m_delimiter + destinationFilePath + m_delimiter + std::to_string(fileSize) + m_delimiter;
         SendRequest(request);
 
         m_file.open(localFilePath, std::ios::in | std::ios::binary);
@@ -202,13 +203,15 @@ public:
         std::cout << "File uploaded to - " << localFilePath << std::endl;
     }
 
-    void CreateFileLocally(const std::string& filePath)
+    std::string CreateFileLocally(const std::string& filePath)
     {
         auto fileName = std::filesystem::path(filePath).filename().string();
         auto fileToCreate = (std::filesystem::path(m_clientDedicatedDirectory) / fileName).string();
         m_file.open(fileToCreate, std::ios::out | std::ios::binary);
         if (!m_file)
             throw; // TODO - throw specific exception
+
+        return fileToCreate;
     }
 
 
