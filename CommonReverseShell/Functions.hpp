@@ -28,29 +28,31 @@ public:
 		auto fileSize = std::stoi(Response());
 		while (fileSize > 0)
 		{
-			auto bufferSize = (fileSize < m_caller->m_buf.size()) ? fileSize : m_caller->m_buf.size();
-			auto buf = boost::asio::buffer(m_caller->m_buf, bufferSize);
+			std::array<char, defaultBufferSize> response;
+			auto bufferSize = (fileSize < defaultBufferSize) ? fileSize : defaultBufferSize;
+			auto buf = boost::asio::buffer(response, bufferSize);
 			auto responseSize = boost::asio::read(m_caller->m_socket, buf, m_errorCode);
-			m_caller->m_file.write(m_caller->m_buf.data(), responseSize);
+			m_caller->m_file.write(response.c_str(), responseSize);
 
 			fileSize -= responseSize;
-			std::cout << "Remaining bytes: " << fileSize << "\nResponse Size: " << responseSize << std::endl;
+			std::cout << "Remaining bytes: " << fileSize << "    Response Size: " << responseSize << std::endl;
 		}
 		m_caller->m_file.close();
 	}
 
-	void Upload(int fileSize, boost::asio::streambuf& t_buffer)
+	void Upload(int fileSize, boost::asio::buffer& buf)
 	{
-		Send(t_buffer);
+		Send(buf);
 
 		while (fileSize > 0)
 		{
-			m_caller->m_file.read(m_caller->m_buf.data(), m_caller->m_buf.size());
+			std::array<char, defaultBufferSize> response;
+			m_caller->m_file.read(m_caller->response.data(), m_caller->response.size());
 			if (m_caller->m_file.fail() && !m_caller->m_file.eof())
 				throw std::fstream::failure("Failed while reading file");
 
 			size_t bufferSize(m_caller->m_file.gcount());
-			auto buf = boost::asio::buffer(m_caller->m_buf.data(), bufferSize);
+			auto buf = boost::asio::buffer(m_caller->response.data(), bufferSize);
 			Send(buf);
 
 			fileSize -= bufferSize;
@@ -99,7 +101,7 @@ public:
 
 private:
 	T* m_caller;
-
+	const int defaultBufferSize = 1024;
 public:
 	boost::system::error_code m_errorCode;
 	const std::string m_delimiter = "\r\n\r\n";
