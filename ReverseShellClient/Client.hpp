@@ -120,9 +120,7 @@ public: // TODO - Turn this back into private after solving the CommonReverseShe
 	TcpResolver m_ioService;
 	TcpSocket m_socket;
 	TcpResolverIterator m_endpointIterator;
-	boost::asio::streambuf m_requestBuf;
 	boost::asio::streambuf m_responseBuf;
-	std::array<char, 1024> m_buf;
 	std::fstream m_file;
 };
 
