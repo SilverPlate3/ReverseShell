@@ -74,7 +74,7 @@ public:
 
 private:
 
-    void popen(const std::string command)
+    void popen(const std::string& command)
     {
         auto pipe = _popen(command.c_str(), "r");
         if (pipe == nullptr)
@@ -85,7 +85,7 @@ private:
         }
 
         std::fstream fstream(pipe);
-        std::vector<char> output((std::istreambuf_iterator<char>(fstream)), std::istreambuf_iterator<char>());
+        std::vector<char> output((std::istreambuf_iterator<char>(fstream)), std::istreambuf_iterator<char>()); 
         std::unique_lock<std::mutex> lock(mutexCommandResult, std::try_to_lock);
         if (!lock.owns_lock())
             return;
