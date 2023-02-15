@@ -1,5 +1,4 @@
-#ifndef _SERVER_H_
-#define _SERVER_H_
+#pragma once
 
 #include <fstream>
 #include <boost/asio.hpp>
@@ -157,18 +156,14 @@ private:
 
 class Server
 {
-private:
-    using TcpSocket = boost::asio::ip::tcp::socket;
-    using TcpAcceptor = boost::asio::ip::tcp::acceptor;
-    using IoService = boost::asio::io_service;
 public:
 
-    Server(IoService& ioService)
-        : m_socket(ioService), m_acceptor(ioService, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 4444))
+    Server()
+        : m_ioService(boost::asio::io_service()), m_socket(m_ioService), m_acceptor(m_ioService, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 4444))
     {
         std::cout << "Server started" << std::endl;
-
         AcceptConnection();
+        m_ioService.run();
     }
 
 private:
@@ -178,14 +173,13 @@ private:
         m_acceptor.async_accept(m_socket, [this](boost::system::error_code ec)
             {
                 if (!ec)
-                std::make_shared<Session>(std::move(m_socket));
+                    std::make_shared<Session>(std::move(m_socket));
 
-        AcceptConnection();
+                AcceptConnection();
             });
     }
 
-    TcpSocket m_socket;
-    TcpAcceptor m_acceptor;
+    boost::asio::io_service m_ioService;
+    boost::asio::ip::tcp::socket m_socket;
+    boost::asio::ip::tcp::acceptor m_acceptor;
 };
-
-#endif _SERVER_H_

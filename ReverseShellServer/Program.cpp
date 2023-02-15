@@ -7,14 +7,12 @@
 
 int main()
 {
-    try {
-        boost::asio::io_service ioService;
-
-        Server server(ioService);
-
-        ioService.run();
+    try
+    {
+        Server server;
     }
-    catch (std::exception& e) {
+    catch (std::exception& e) 
+    {
         std::cerr << "Exception: " << e.what() << "\n";
     }
 

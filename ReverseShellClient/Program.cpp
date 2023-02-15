@@ -5,12 +5,7 @@
 int main()
 {
     try {
-        boost::asio::io_service ioService;
-
-        boost::asio::ip::tcp::resolver resolver(ioService);
-        Client client(ioService);
-
-        ioService.run();
+        Client client;
     }
     catch (std::fstream::failure& e) {
         std::cerr << e.what() << "\n";
