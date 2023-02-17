@@ -29,5 +29,8 @@
     <ClInclude Include="CommandExecuter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ReverseShellStandardFunctions.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

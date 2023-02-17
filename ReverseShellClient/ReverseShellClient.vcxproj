@@ -111,8 +111,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\ariels\OneDrive - Cynet LTD\Desktop\Ariel Silver\Personal\C++\LearnCPP\ReverseShell\x64\Debug;C:\Program Files\boost\boost_1_81_0\boost_1_81_0\stage\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>CommonReverseShell.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files\boost\boost_1_81_0\boost_1_81_0\stage\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -138,6 +138,7 @@
   <ItemGroup>
     <ClInclude Include="Client.hpp" />
     <ClInclude Include="CommandExecuter.h" />
+    <ClInclude Include="ReverseShellStandardFunctions.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
