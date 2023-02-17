@@ -179,7 +179,7 @@ public:
 private:
 	T* m_caller;
 	boost::asio::streambuf m_responseBuf;
-	const std::string m_delimiter = "\r\n\r\n";
+	const std::string m_delimiter = "#\r\n$\r\n#";
 	std::fstream m_file;
 public:
 	boost::system::error_code m_errorCode;

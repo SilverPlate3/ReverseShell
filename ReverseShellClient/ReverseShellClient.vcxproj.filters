@@ -18,12 +18,15 @@
     <ClCompile Include="Program.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CommandExecuter.hpp">
-      <Filter>Header Files</Filter>
+    <ClCompile Include="CommandExecuter.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandExecuter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
