@@ -138,6 +138,7 @@
   <ItemGroup>
     <ClInclude Include="Client.hpp" />
     <ClInclude Include="CommandExecuter.h" />
+    <ClInclude Include="NetworkExcetion.hpp" />
     <ClInclude Include="ReverseShellStandardFunctions.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

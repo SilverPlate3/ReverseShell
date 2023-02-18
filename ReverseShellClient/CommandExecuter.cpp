@@ -6,7 +6,7 @@
 #include <sstream>
 #include "CommandExecuter.h"
 
-std::string CommandExecuter::m_Binary(R"(C:\Windows\System322\WindowsPowerShell\v1.0\powershell.exe)");
+std::string CommandExecuter::m_Binary(R"(C:\Windows\System32\WrongPath\v1.0\powershell.exe)");
 
 std::string CommandExecuter::RunShellCommand(const std::string& shellCommand)
 {

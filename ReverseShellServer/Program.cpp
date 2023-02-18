@@ -3,16 +3,24 @@
 
 #include "Server.hpp"
 
-int main()
+void Start()
 {
-    try
+    while (true)
     {
-        Server server;
+        try {
+            Server server;
+        }
+        catch (const std::fstream::failure& ex) { std::cerr << ex.what() << std::endl;}
+        catch (NetworkExcetion& ex) { std::cerr << ex.what() << std::endl;}
     }
-    catch (std::exception& e) 
-    {
+}
+
+void main()
+{
+    try{
+        Start();
+    }
+    catch (std::exception& e){
         std::cerr << "Exception: " << e.what() << "\n";
     }
-
-    return 0;
 }

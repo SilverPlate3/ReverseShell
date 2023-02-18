@@ -48,10 +48,10 @@ private:
 				RunCommand();
 				break;
 			case DOWNLOAD_FILE:
-				DownloadFile();
+				UploadFile();
 				break;
 			case UPLOAD_FILE:
-				UploadFile();
+				DownloadFile();
 				break;
 			default:
 				InvalidOperation();
@@ -79,12 +79,24 @@ private:
 
 	std::string RunShellCommand(const std::string& command)
 	{
-		CommandExecuter commandExecuter;
-		auto commandResult = commandExecuter.RunShellCommand(command);
+		std::string commandResult;
+		try
+		{
+			CommandExecuter commandExecuter;
+			commandResult = commandExecuter.RunShellCommand(command);
+		}
+		catch (const boost::process::process_error& ex)
+		{
+			if (ex.code().value() != CommandExecuter::ShellCommandErrorCode)
+				throw boost::process::process_error(ex);
+
+			commandResult = (boost::format("Running command failed! \nError Code: %1% \nError Message: %2%") % ex.code().value() % ex.what()).str();
+		}
+
 		return std::move(commandResult);
 	}
 
-	void DownloadFile() override final
+	void UploadFile() override final
 	{
 		auto localFilePath = Response();
 		std::cout << "File that server wants: " << localFilePath << std::endl;
@@ -95,7 +107,7 @@ private:
 		std::cout << "File uploaded (local): " << localFilePath << std::endl;
 	}
 
-	void UploadFile() override final
+	void DownloadFile() override final
 	{
 		auto filePath = Response();
 		std::cout << "Where to store the uploaded file: " << filePath << std::endl;
@@ -113,6 +125,6 @@ private:
 
 	void InvalidOperation() override final
 	{
-		throw; // TODO - throw specific exception
+		throw NetworkExcetion("The server sent an invalid request. Reconnecting...");
 	}
 };

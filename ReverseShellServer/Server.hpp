@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include "ReverseShellStandardFunctions.hpp"
+#include "NetworkExcetion.hpp"
 
 // TODO - take this function to "common utils"
 std::string EnvVariable(const std::string& envVariable)
@@ -165,7 +166,7 @@ private:
 
     void InvalidOperation()
     {
-        std::cout << "Invalid operation! Type the number of a option from the menu!" << std::endl;
+        std::cout << "Invalid operation! Type the number of an option from the menu!" << std::endl;
     }
 
     std::string CreateFileLocally(const std::string& filePath)
