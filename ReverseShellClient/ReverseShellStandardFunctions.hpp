@@ -160,7 +160,7 @@ private:
 	}
 
 protected:
-	//TODO - In the ransom move thise to another place
+	//TODO - In the ransom move this to another place
 	bool IsRegularFileExists(const std::filesystem::path& filePath)
 	{
 		return (std::filesystem::exists(filePath) && std::filesystem::is_regular_file(filePath));

