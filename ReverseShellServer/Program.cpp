@@ -1,7 +1,8 @@
 #define _WIN32_WINDOWS 0x0A00
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
-#include "Server.hpp"
+#include "Server.h"
+#include "NetworkExcetion.hpp"
 
 void Start()
 {

@@ -2,8 +2,10 @@
 #define _WIN32_WINDOWS 0x0A00
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
+#include <boost/format.hpp>
 #include "CommandExecuter.h"
-#include "ReverseShellStandardFunctions.hpp"
+#include "ReverseShellStandardFunctions.h"
+#include "NetworkExcetion.hpp"
 
 class Client : private ReverseShellStandard
 {

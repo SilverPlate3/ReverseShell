@@ -21,6 +21,9 @@
     <ClCompile Include="CommandExecuter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ReverseShellStandardFunctions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.hpp">
@@ -29,7 +32,7 @@
     <ClInclude Include="CommandExecuter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ReverseShellStandardFunctions.hpp">
+    <ClInclude Include="ReverseShellStandardFunctions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="NetworkExcetion.hpp">

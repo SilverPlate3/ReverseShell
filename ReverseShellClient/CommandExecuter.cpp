@@ -1,5 +1,4 @@
-#include <boost/process/search_path.hpp>
-#include <boost/process/pipe.hpp>
+#include <boost/process.hpp>
 #include <boost/format.hpp>
 #include <boost/process/extend.hpp>
 #include <filesystem>

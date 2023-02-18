@@ -134,12 +134,13 @@
   <ItemGroup>
     <ClCompile Include="CommandExecuter.cpp" />
     <ClCompile Include="Program.cpp" />
+    <ClCompile Include="ReverseShellStandardFunctions.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.hpp" />
     <ClInclude Include="CommandExecuter.h" />
     <ClInclude Include="NetworkExcetion.hpp" />
-    <ClInclude Include="ReverseShellStandardFunctions.hpp" />
+    <ClInclude Include="ReverseShellStandardFunctions.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

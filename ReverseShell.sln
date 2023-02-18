@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ReverseShellClient", "ReverseShellClient\ReverseShellClient.vcxproj", "{FAB1A3F8-B7CD-45F8-8788-10060E7AF31F}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ReverseShellServer", "ReverseShellServer\ReverseShellServer.vcxproj", "{212ACCC7-84C1-4FBD-9883-E5FCE979E4E1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FAB1A3F8-B7CD-45F8-8788-10060E7AF31F} = {FAB1A3F8-B7CD-45F8-8788-10060E7AF31F}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
