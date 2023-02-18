@@ -18,6 +18,26 @@ public:
 
 private:
 
+	void Connect() override final
+	{
+		using TcpResolver = boost::asio::ip::tcp::resolver;
+		TcpResolver resolver(m_ioService);
+		auto endpointIterator = resolver.resolve({ "127.0.0.1", "4444" });
+
+		while (true)
+		{
+			boost::asio::connect(m_socket, endpointIterator, m_errorCode);
+			if (!m_errorCode)
+				return;
+
+			std::cout << "Coudn't connect to server. Check that it is up and listening " << std::endl;
+			m_socket.close();
+			std::this_thread::sleep_for(std::chrono::seconds(3));
+		}
+
+		std::cout << "Connected to: " << m_socket.remote_endpoint().address().to_string() << std::endl;
+	}
+
 	void Start()
 	{
 		while (true)
@@ -40,26 +60,6 @@ private:
 
 			m_responseBuf.consume(m_responseBuf.size());
 		}
-	}
-
-	void Connect() override final
-	{
-		using TcpResolver = boost::asio::ip::tcp::resolver;
-		TcpResolver resolver(m_ioService);
-		auto endpointIterator = resolver.resolve({ "127.0.0.1", "4444" });
-
-		while (true)
-		{
-			boost::asio::connect(m_socket, endpointIterator, m_errorCode);
-			if (!m_errorCode)
-				return;
-
-			std::cout << "Coudn't connect to server. Check that it is up and listening " << std::endl;
-			m_socket.close();
-			std::this_thread::sleep_for(std::chrono::seconds(3));
-		}
-
-		std::cout << "Connected to: " << m_socket.remote_endpoint().address().to_string() << std::endl;
 	}
 
 	OperationType ReadOperationType() override final

