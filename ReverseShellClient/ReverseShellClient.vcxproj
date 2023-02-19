@@ -132,12 +132,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Client.cpp" />
     <ClCompile Include="CommandExecuter.cpp" />
     <ClCompile Include="Program.cpp" />
     <ClCompile Include="ReverseShellStandardFunctions.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Client.hpp" />
+    <ClInclude Include="Client.h" />
     <ClInclude Include="CommandExecuter.h" />
     <ClInclude Include="NetworkExcetion.hpp" />
     <ClInclude Include="ReverseShellStandardFunctions.h" />

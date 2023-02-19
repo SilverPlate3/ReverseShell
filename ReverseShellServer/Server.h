@@ -5,7 +5,6 @@
 
 #include "ReverseShellStandardFunctions.h"
 
-
 class Server : public ReverseShellStandard
 {
 public:
