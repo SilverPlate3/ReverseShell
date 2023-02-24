@@ -115,7 +115,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\Users\ariels\OneDrive - Cynet LTD\Desktop\Ariel Silver\Personal\C++\LearnCPP\ReverseShell\ReverseShellClient\x64\Debug;C:\Program Files\boost\boost_1_81_0\boost_1_81_0\stage\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ReverseShellStandardFunctions.obj;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ReverseShellStandardFunctions.obj;WinApiUtils.obj;FileEncryptionDecision.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

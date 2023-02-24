@@ -29,9 +29,11 @@ public:
 	WinApiUtils();
 	const char* GetCurrentPrcessPathChar();
 	const std::string& GetCurrentPrcessPathString();
+	static std::string GetEnvVariable(const std::string& envVariable);
 
 private:
 	std::unique_ptr<char[]> m_currentPrcessPathChar = std::make_unique<char[]>(MAX_PATH);
 	std::string m_currentPrcessPathString;
 	void SetCurrentProcessPath();
 };
+

@@ -16,6 +16,7 @@ private:
     void Start();
     void SetClientDedicatedDirectory();
     void CreateClientDedicatedDirectory();
+    void FirstConnectionMessage();
     OperationType ReadOperationType() override final;
     void PrintOptionsMenu();
     void RunCommand() override final;

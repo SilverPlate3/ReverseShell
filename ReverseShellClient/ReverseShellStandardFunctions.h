@@ -26,7 +26,6 @@ protected:
 	OperationType GetOperationType(const std::string& operation);
 	void UploadFile(const std::string& localFilePath);
 	void DownloadFile(const std::string& filePath);
-	bool IsRegularFileExists(const std::filesystem::path& filePath); //TODO - In the ransom move this to another place
 	virtual void Connect() = 0;
 	virtual OperationType ReadOperationType() = 0;
 	virtual void RunCommand() = 0;
@@ -39,7 +38,7 @@ protected:
 
 private:
 	std::string CleanReponse(size_t responseSize);
-	void UploadFileBytes(int fileSize);
+	void UploadFileBytes(size_t fileSize);
 	void BytesFromFileToBuffer(std::array<char, DEFAULT_BUFFER_SIZE>& response);
 	void BytesFromSocketToFile(int amountOfBytes);
 	void WriteLeakedBytes();

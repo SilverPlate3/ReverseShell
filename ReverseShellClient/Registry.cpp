@@ -15,7 +15,7 @@ void Registry::SplitRegistryPath(const std::string& fullKeyPath)
 {
 	std::size_t pos = fullKeyPath.find(R"(\)");
 	if (pos == std::string::npos)
-		throw WinApiException("(Ignore the error code) Invalid registry path");
+		throw WinApiException("Invalid registry path");
 
 	m_key = fullKeyPath.substr(0, pos);
 	m_subKey = fullKeyPath.substr(pos + 1);
@@ -56,8 +56,7 @@ HKEY Registry::getHkey()
 		return HKEY_USERS;
 	else
 	{
-		std::string message("(Ignore the error code) Not a default Registry key - ");
-		message += m_key;
+		std::string message("Not a default Registry key " + m_key);
 		throw WinApiException(message);
 	}
 }
@@ -85,7 +84,7 @@ std::string Registry::QueryValue(const std::string& value)
 		else if (result == ERROR_MORE_DATA)
 			continue;
 		else if (result == ERROR_FILE_NOT_FOUND)
-			throw WinApiException("(Ignore the error code)  The specified value wasn't found");
+			throw WinApiException("The specified value wasn't found");
 		else
 			throw WinApiException("RegQueryValueExA");
 	}
