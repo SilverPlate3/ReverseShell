@@ -9,7 +9,7 @@ void Start()
     while (true)
     {
         try {
-            Server server;
+            Server server; 
         }
         catch (const std::fstream::failure& ex) { std::cerr << ex.what() << std::endl;}
         catch (NetworkExcetion& ex) { std::cerr << ex.what() << std::endl;}
